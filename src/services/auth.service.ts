@@ -1,0 +1,68 @@
+import { apiClient } from './apiClient';
+import { API_ROUTES } from '../constants/apiRoutes';
+import { AuthResponseData, LoginPayload, SignupPayload, User } from '../types/auth.types';
+
+const TOKEN_KEY = 'trao_token';
+const USER_KEY = 'trao_user';
+
+export const AuthService = {
+  async signup(payload: SignupPayload): Promise<AuthResponseData> {
+    const res = await apiClient<AuthResponseData>(API_ROUTES.AUTH.SIGNUP, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.data) {
+      throw new Error(res.message || 'Signup response missing data');
+    }
+
+    this.setSession(res.data);
+    return res.data;
+  },
+
+  async login(payload: LoginPayload): Promise<AuthResponseData> {
+    const res = await apiClient<AuthResponseData>(API_ROUTES.AUTH.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.data) {
+      throw new Error(res.message || 'Login response missing data');
+    }
+
+    this.setSession(res.data);
+    return res.data;
+  },
+
+  setSession(authData: AuthResponseData): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(TOKEN_KEY, authData.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(authData.user));
+  },
+
+  clearSession(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  },
+
+  getStoredToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_KEY);
+  },
+
+  getStoredUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem(USER_KEY);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as User;
+    } catch {
+      return null;
+    }
+  },
+
+  isAuthenticated(): boolean {
+    return Boolean(this.getStoredToken());
+  },
+};
