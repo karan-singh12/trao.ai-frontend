@@ -11,21 +11,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Initialize from localStorage on mount
+  // Initialize from localStorage and verify session with backend
   useEffect(() => {
-    try {
-      const storedToken = AuthService.getStoredToken();
-      const storedUser = AuthService.getStoredUser();
+    const initializeAuth = async () => {
+      try {
+        const storedToken = AuthService.getStoredToken();
+        const storedUser = AuthService.getStoredUser();
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
+        if (storedToken) {
+          setToken(storedToken);
+          if (storedUser) setUser(storedUser);
+
+          // Verify with backend to ensure session is not expired or revoked
+          try {
+            const data = await AuthService.getMe();
+            setUser(data.user);
+          } catch (err: any) {
+            // If token expired or invalid (401), wipe stale session
+            if (err?.statusCode === 401 || err?.status === 401) {
+              AuthService.clearSession();
+              setToken(null);
+              setUser(null);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore auth session:', e);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (e) {
-      console.error('Failed to restore auth session:', e);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (credentials: LoginPayload): Promise<AuthResponseData> => {
@@ -42,11 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data;
   };
 
-  const logout = () => {
-    AuthService.clearSession();
+  const logout = async () => {
+    await AuthService.logout();
     setUser(null);
     setToken(null);
   };
+
 
   const value: AuthContextType = {
     user,

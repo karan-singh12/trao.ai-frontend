@@ -34,6 +34,32 @@ export const AuthService = {
     return res.data;
   },
 
+  async getMe(): Promise<{ user: User }> {
+    const res = await apiClient<{ user: User }>(API_ROUTES.AUTH.ME, {
+      method: 'GET',
+    });
+
+    if (!res.data?.user) {
+      throw new Error(res.message || 'Failed to fetch user session');
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_KEY, JSON.stringify(res.data.user));
+    }
+
+    return res.data;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await apiClient(API_ROUTES.AUTH.LOGOUT, { method: 'POST' });
+    } catch {
+      // Local cleanup occurs regardless of network outcome
+    } finally {
+      this.clearSession();
+    }
+  },
+
   setSession(authData: AuthResponseData): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, authData.token);

@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import { SAMPLE_PREP_KIT, PrepKit, Question, Flashcard } from '../../data/sampleKit';
+
 import {
   Sparkles,
   BookOpen,
@@ -153,7 +155,8 @@ export default function DashboardPage() {
   const totalPrepMinutes = kit.schedule.days.reduce((acc, d) => acc + d.minutes, 0);
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <ProtectedRoute>
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Kit Header Banner */}
       <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-zinc-900 via-indigo-950 to-zinc-900 text-white border border-indigo-900/30 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -843,6 +846,8 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
+
