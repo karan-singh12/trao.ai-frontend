@@ -15,8 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PrepKit AI — The AI Interview Prep Kit & Studio",
+  title: {
+    default: "PrepKit.ai — The AI Interview Prep Kit & Studio",
+    template: "%s · PrepKit.ai",
+  },
   description: "Manage role-specific prep kits, track readiness milestones, and launch active study sessions.",
+  icons: {
+    icon: [
+      { url: "/trao-icon.png", href: "/trao-icon.png" },
+      { url: "/favicon.ico", href: "/favicon.ico" }
+    ],
+    shortcut: "/trao-icon.png",
+    apple: "/trao-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +41,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <title>PrepKit.ai — The AI Interview Prep Kit & Studio</title>
+        <link rel="icon" type="image/png" href="/trao-icon.png" />
+        <link rel="shortcut icon" href="/trao-icon.png" />
+        <link rel="apple-touch-icon" href="/trao-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

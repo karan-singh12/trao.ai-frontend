@@ -67,8 +67,8 @@ export default function LoginPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
             Welcome back
           </h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Sign in to access your Trao.ai observability console
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Sign in to access your PrepKit.ai interview studio
           </p>
         </div>
 

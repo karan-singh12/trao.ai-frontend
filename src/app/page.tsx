@@ -77,18 +77,24 @@ export default function Home() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between">
+    <div className="relative min-h-screen flex flex-col justify-between bg-slate-50/90 dark:bg-zinc-950 font-body-md text-on-surface selection:bg-indigo-600 selection:text-white transition-colors">
+      {/* Modern Executive Subtle Dot Grid Background matching Dashboard */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:24px_24px] opacity-40"
+        aria-hidden="true"
+      />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-16 pb-12 sm:pt-24 sm:pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="absolute inset-0 -z-10 flex items-center justify-center">
-          <div className="w-[650px] h-[650px] bg-gradient-to-tr from-indigo-500/15 via-violet-500/15 to-sky-400/15 rounded-full blur-3xl" />
+        <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+          <div className="w-[650px] h-[650px] bg-gradient-to-tr from-indigo-500/10 via-violet-500/10 to-sky-400/10 rounded-full blur-3xl" />
         </div>
 
         <div className="max-w-4xl mx-auto text-center space-y-6">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>Full-Stack Engineering Assessment · FS-AI-INTERVIEW-01</span>
+            <span>AI-Powered Interview Studio</span>
           </div>
 
           {/* Heading */}
@@ -100,15 +106,16 @@ export default function Home() {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl mx-auto leading-relaxed font-normal">
             Turn any job description and company website into a bespoke interview preparation kit. Deep company research, categorized question banks, flashcards, and a day-by-day study schedule.
           </p>
 
           {/* Call to action buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              prefetch={true}
+              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 hover:opacity-95 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <span>Open Prep Kit Builder</span>
               <ArrowRight className="w-4 h-4" />
@@ -116,7 +123,8 @@ export default function Home() {
             {!isAuthenticated && (
               <Link
                 href="/signup"
-                className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 font-semibold text-sm shadow-sm transition-all"
+                prefetch={true}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/90 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 font-bold text-sm shadow-xs transition-all cursor-pointer"
               >
                 <span>Create Free Account</span>
               </Link>
@@ -126,8 +134,8 @@ export default function Home() {
       </section>
 
       {/* Interactive Generator Preview Playground */}
-      <section className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden">
+      <section id="playground" className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 scroll-mt-24">
+        <div className="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl shadow-xl overflow-hidden">
           {/* Playground Top Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:px-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40">
             <div className="flex items-center gap-2.5">
@@ -235,7 +243,7 @@ export default function Home() {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Deliberate Multi-Stage Pipeline
                 </h3>
-                <span className="text-xs text-zinc-400 font-mono">Section 3 & 4</span>
+                <span className="text-xs text-zinc-400 font-mono">Pipeline Engine</span>
               </div>
 
               {/* Step Progress Checklist */}
@@ -302,100 +310,100 @@ export default function Home() {
       </section>
 
       {/* Core Specification Pillars Grid */}
-      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 space-y-12">
+      <section id="features" className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 space-y-12 scroll-mt-24">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white">
-            Engineered According to Trao Specs
+            Built for Modern Tech Hiring
           </h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Every section of the assessment is implemented with high engineering rigor and clear separation of concerns.
+            Everything you need to crack high-bar engineering and leadership interviews with precision.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-100/80 via-sky-100/50 to-white dark:from-blue-950/40 dark:via-sky-950/20 dark:to-zinc-900 border border-blue-200/90 dark:border-blue-800/60 shadow-xs hover:shadow-md hover:shadow-blue-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
               <Search className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
+            <h3 className="font-bold text-lg text-blue-950 dark:text-white">
               The Deliberate Research Loop
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-sm text-blue-950/80 dark:text-blue-200/80 leading-relaxed">
               Crawls the company site, ranks internal links, extracts interview discussion, and executes Pass 2 gap-checking so no must-have requirement is left uncovered.
             </p>
           </div>
 
           {/* Card 2 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center text-violet-600 dark:text-violet-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-violet-100/80 via-purple-100/50 to-white dark:from-violet-950/40 dark:via-purple-950/20 dark:to-zinc-900 border border-violet-200/90 dark:border-violet-800/60 shadow-xs hover:shadow-md hover:shadow-violet-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-500/25 group-hover:scale-105 transition-transform">
               <Sliders className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
+            <h3 className="font-bold text-lg text-violet-950 dark:text-white">
               The Reshapeable Builder
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-sm text-violet-950/80 dark:text-violet-200/80 leading-relaxed">
               Edit any question inline, reorder items, add custom flashcards, and regenerate individual sections without clobbering pinned or manually edited content.
             </p>
           </div>
 
           {/* Card 3 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-100/80 via-teal-100/50 to-white dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-zinc-900 border border-emerald-200/90 dark:border-emerald-800/60 shadow-xs hover:shadow-md hover:shadow-emerald-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform">
               <BookOpen className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
+            <h3 className="font-bold text-lg text-emerald-950 dark:text-white">
               Interactive Practice Mode
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-sm text-emerald-950/80 dark:text-emerald-200/80 leading-relaxed">
               Flip through flashcards, rate confidence (Need Practice, Getting There, Confident), and review according to confidence-weighted spacing.
             </p>
           </div>
 
           {/* Card 4 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-100/80 via-orange-100/50 to-white dark:from-amber-950/40 dark:via-orange-950/20 dark:to-zinc-900 border border-amber-200/90 dark:border-amber-800/60 shadow-xs hover:shadow-md hover:shadow-amber-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform">
               <Calendar className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
+            <h3 className="font-bold text-lg text-amber-950 dark:text-white">
               Deterministic Day-by-Day Schedule
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-sm text-amber-950/80 dark:text-amber-200/80 leading-relaxed">
               Pure arithmetic topic allocation across requested days (1–60 days). Distributes harder priorities first with integer minute durations.
             </p>
           </div>
 
           {/* Card 5 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-100/80 via-blue-100/50 to-white dark:from-indigo-950/40 dark:via-blue-950/20 dark:to-zinc-900 border border-indigo-200/90 dark:border-indigo-800/60 shadow-xs hover:shadow-md hover:shadow-indigo-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
               <Code2 className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
-              Appendix A Structure Strictness
+            <h3 className="font-bold text-lg text-indigo-950 dark:text-white">
+              Standardized Schema Accuracy
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Kits strictly conform to the spec JSON schema with stable IDs (<code>r1</code>, <code>q1</code>, <code>f1</code>), integer minutes, and verified requirement mappings.
+            <p className="text-sm text-indigo-950/80 dark:text-indigo-200/80 leading-relaxed">
+              Kits strictly conform to verified schemas with stable question keys, integer minute durations, and validated coverage.
             </p>
           </div>
 
           {/* Card 6 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 dark:text-rose-400">
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-rose-100/80 via-pink-100/50 to-white dark:from-rose-950/40 dark:via-pink-950/20 dark:to-zinc-900 border border-rose-200/90 dark:border-rose-800/60 shadow-xs hover:shadow-md hover:shadow-rose-500/15 transition-all space-y-3 group">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shadow-md shadow-rose-500/25 group-hover:scale-105 transition-transform">
               <Terminal className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-zinc-900 dark:text-white">
-              Batch CLI Pipeline Support
+            <h3 className="font-bold text-lg text-rose-950 dark:text-white">
+              Batch Multi-Role Evaluation
             </h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Designed for Section 9 batch evaluation: <code>npm run evaluate -- --input cases.json --output kits.json</code> with graceful failure tolerance.
+            <p className="text-sm text-rose-950/80 dark:text-rose-200/80 leading-relaxed">
+              Designed for high-throughput batch evaluation: <code>npm run evaluate -- --input cases.json --output kits.json</code> with graceful failure tolerance.
             </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="w-full border-t border-zinc-200 dark:border-zinc-800 py-6 text-center text-xs text-zinc-500">
-        Trao.ai © {new Date().getFullYear()} — Full-Stack AI Interview Prep Kit
+      <footer className="w-full border-t border-zinc-200/80 dark:border-zinc-800 py-6 text-center text-xs text-zinc-500 font-medium">
+        PrepKit.ai © {new Date().getFullYear()} — Full-Stack AI Interview Prep Kit
       </footer>
     </div>
   );
