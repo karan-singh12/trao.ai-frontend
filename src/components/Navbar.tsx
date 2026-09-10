@@ -2,11 +2,18 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, User as UserIcon, Sparkles, LayoutDashboard } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const pathname = usePathname();
+
+  // The dashboard provides its own executive sidebar and top header
+  if (pathname?.startsWith('/dashboard')) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md">
