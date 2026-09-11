@@ -1,13 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { SAMPLE_KITS, SAMPLE_STRIPE_KIT, Question, PrepKit } from '../../../data/sampleKit';
+import { useSearchParams } from 'next/navigation';
+import { SAMPLE_KITS, Question, PrepKit } from '../../../data/sampleKit';
 import { KitService } from '../../../services/kit.service';
 
-export default function ArchiveBuilderPage() {
-  const [kits, setKits] = useState<PrepKit[]>(SAMPLE_KITS);
-  const [activeKit, setActiveKit] = useState<PrepKit>(SAMPLE_STRIPE_KIT);
+function ArchiveContent() {
+  const searchParams = useSearchParams();
+  const kitIdParam = searchParams.get('kitId');
+
+  const [kits, setKits] = useState<PrepKit[]>([]);
+  const [activeKit, setActiveKit] = useState<PrepKit | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Category & search filter
   const [activeCategory, setActiveCategory] = useState<'all' | 'technical' | 'behavioural'>('all');
@@ -21,7 +26,73 @@ export default function ArchiveBuilderPage() {
   // Status message
   const [message, setMessage] = useState<string | null>(null);
 
-  const questions: Question[] = activeKit.questions || [];
+  useEffect(() => {
+    async function loadKits() {
+      setIsLoading(true);
+      try {
+        let loadedKits: PrepKit[] = [];
+
+        try {
+          const backendKits = await KitService.getKits();
+          if (backendKits && Array.isArray(backendKits) && backendKits.length > 0) {
+            loadedKits = backendKits;
+          }
+        } catch (e) {
+          console.warn('Could not load kits from backend:', e);
+        }
+
+        let localKit: PrepKit | null = null;
+        try {
+          const stored = localStorage.getItem('active_kit');
+          if (stored) {
+            localKit = JSON.parse(stored);
+            if (localKit && !loadedKits.some((k) => (k._id || k.id) === (localKit?._id || localKit?.id))) {
+              loadedKits = [localKit, ...loadedKits];
+            }
+          }
+        } catch (e) {}
+
+        if (loadedKits.length === 0) {
+          loadedKits = SAMPLE_KITS;
+        }
+
+        setKits(loadedKits);
+
+        let target: PrepKit | undefined;
+        if (kitIdParam) {
+          target = loadedKits.find((k) => (k._id || k.id) === kitIdParam);
+          if (!target) {
+            try {
+              const fetchedSingle = await KitService.getKitById(kitIdParam);
+              if (fetchedSingle) {
+                target = fetchedSingle;
+                loadedKits = [fetchedSingle, ...loadedKits.filter((k) => (k._id || k.id) !== kitIdParam)];
+                setKits(loadedKits);
+              }
+            } catch (e) {}
+          }
+        }
+
+        if (!target && localKit) {
+          target = loadedKits.find((k) => (k._id || k.id) === (localKit?._id || localKit?.id));
+        }
+
+        if (!target) {
+          target = loadedKits[0];
+        }
+
+        if (target) {
+          setActiveKit(target);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadKits();
+  }, [kitIdParam]);
+
+  const questions: Question[] = activeKit?.questions || [];
 
   const filteredQuestions = questions.filter((q) => {
     const matchesCat = activeCategory === 'all' || q.category === activeCategory;
@@ -32,12 +103,32 @@ export default function ArchiveBuilderPage() {
     return matchesCat && matchesText;
   });
 
+  const handleSelectKit = (newKitId: string) => {
+    const found = kits.find((k) => (k._id || k.id) === newKitId);
+    if (found) {
+      setActiveKit(found);
+      try {
+        localStorage.setItem('active_kit', JSON.stringify(found));
+      } catch (e) {}
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('kitId', newKitId);
+        window.history.pushState({}, '', url.toString());
+      }
+    }
+  };
+
   // Toggle Pin (Survives regeneration)
   const handleTogglePin = (qId: string) => {
-    setActiveKit((prev) => ({
-      ...prev,
-      questions: prev.questions?.map((q) => (q.id === qId ? { ...q, isPinned: !q.isPinned } : q))
-    }));
+    if (!activeKit) return;
+    setActiveKit((prev) =>
+      prev
+        ? {
+            ...prev,
+            questions: prev.questions?.map((q) => (q.id === qId ? { ...q, isPinned: !q.isPinned } : q)),
+          }
+        : prev
+    );
     setMessage(`Updated pin status. Pinned questions are immune to regeneration.`);
   };
 
@@ -50,26 +141,32 @@ export default function ArchiveBuilderPage() {
 
   // Save Inline Edit (sets isEdited=true and isPinned=true per Section 6 rule)
   const handleSaveEdit = (qId: string) => {
-    setActiveKit((prev) => ({
-      ...prev,
-      questions: prev.questions?.map((q) =>
-        q.id === qId
-          ? {
-              ...q,
-              prompt: editPrompt,
-              answer_outline: editAnswer,
-              isEdited: true,
-              isPinned: true
-            }
-          : q
-      )
-    }));
+    if (!activeKit) return;
+    setActiveKit((prev) =>
+      prev
+        ? {
+            ...prev,
+            questions: prev.questions?.map((q) =>
+              q.id === qId
+                ? {
+                    ...q,
+                    prompt: editPrompt,
+                    answer_outline: editAnswer,
+                    isEdited: true,
+                    isPinned: true,
+                  }
+                : q
+            ),
+          }
+        : prev
+    );
     setEditingId(null);
     setMessage(`Question saved! Marked as edited & pinned to survive future regenerations.`);
   };
 
   // Move Question Up / Down
   const handleMove = (index: number, direction: 'up' | 'down') => {
+    if (!activeKit) return;
     const newQuestions = [...(activeKit.questions || [])];
     const targetIdx = direction === 'up' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= newQuestions.length) return;
@@ -78,7 +175,7 @@ export default function ArchiveBuilderPage() {
     newQuestions[index] = newQuestions[targetIdx];
     newQuestions[targetIdx] = temp;
 
-    setActiveKit((prev) => ({ ...prev, questions: newQuestions }));
+    setActiveKit((prev) => (prev ? { ...prev, questions: newQuestions } : prev));
   };
 
   // Section Regeneration (respects pinned & edited state per Section 6)
@@ -91,6 +188,7 @@ export default function ArchiveBuilderPage() {
 
   // Export JSON (Appendix A)
   const handleExportJson = () => {
+    if (!activeKit) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(activeKit, null, 2));
     const dlAnchor = document.createElement('a');
     dlAnchor.setAttribute('href', dataStr);
@@ -98,12 +196,46 @@ export default function ArchiveBuilderPage() {
     dlAnchor.click();
   };
 
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs font-bold text-zinc-500">Loading question archive...</p>
+      </div>
+    );
+  }
+
+  const companyName = activeKit?.source?.company || 'Company';
+  const roleTitle = activeKit?.role?.title || 'Engineer';
+  const kitIdentifier = activeKit?._id || activeKit?.id || '';
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Breadcrumb / Back Link */}
+      <div className="mb-4">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>Back to Dashboard</span>
+        </Link>
+      </div>
+
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white tracking-tight">Question Archive</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white tracking-tight">
+              Question Archive
+            </h1>
+            <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800">
+              {companyName}
+            </span>
+          </div>
+          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
+            Target: <span className="text-zinc-900 dark:text-zinc-200 font-bold">{companyName}</span> · {roleTitle}
+          </p>
         </div>
 
         {/* Action Group (Responsive on Mobile) */}
@@ -119,15 +251,12 @@ export default function ArchiveBuilderPage() {
 
           {/* Kit Selector */}
           <select
-            value={activeKit.id}
-            onChange={(e) => {
-              const found = kits.find((k) => k.id === e.target.value);
-              if (found) setActiveKit(found);
-            }}
-            className="h-9 px-3 rounded-xl bg-white/90 dark:bg-zinc-900/90 text-xs font-bold text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 focus:ring-2 focus:ring-indigo-500/40 focus:outline-none cursor-pointer"
+            value={kitIdentifier}
+            onChange={(e) => handleSelectKit(e.target.value)}
+            className="h-9 px-3 rounded-xl bg-white/90 dark:bg-zinc-900/90 text-xs font-bold text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 focus:ring-2 focus:ring-indigo-500/40 focus:outline-none cursor-pointer shadow-xs max-w-[240px] truncate"
           >
             {kits.map((k) => (
-              <option key={k.id} value={k.id}>
+              <option key={k._id || k.id} value={k._id || k.id}>
                 {k.source?.company || 'Company'} · {k.role?.title || 'Engineer'}
               </option>
             ))}
@@ -142,7 +271,10 @@ export default function ArchiveBuilderPage() {
             <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
             <span>{message}</span>
           </div>
-          <button onClick={() => setMessage(null)} className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 transition-colors">
+          <button
+            onClick={() => setMessage(null)}
+            className="p-1 rounded-md hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 transition-colors"
+          >
             <span className="material-symbols-outlined text-[14px]">close</span>
           </button>
         </div>
@@ -197,8 +329,10 @@ export default function ArchiveBuilderPage() {
         {filteredQuestions.map((q, idx) => (
           <div
             key={q.id}
-            className={`p-5 rounded-2xl glass-card border transition-all ${
-              q.isPinned ? 'border-primary/50 bg-primary/5' : 'border-white/80'
+            className={`p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all ${
+              q.isPinned
+                ? 'border-indigo-500/50 bg-indigo-50/20 dark:bg-indigo-950/20'
+                : 'border-zinc-200/80 dark:border-zinc-800/80'
             }`}
           >
             {editingId === q.id ? (
@@ -208,26 +342,26 @@ export default function ArchiveBuilderPage() {
                   type="text"
                   value={editPrompt}
                   onChange={(e) => setEditPrompt(e.target.value)}
-                  className="w-full p-2.5 rounded-xl glass-panel text-sm font-bold border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 text-sm font-bold border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 />
                 <textarea
                   rows={3}
                   value={editAnswer}
                   onChange={(e) => setEditAnswer(e.target.value)}
-                  className="w-full p-2.5 rounded-xl glass-panel text-xs border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 leading-relaxed"
+                  className="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 text-xs border border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 leading-relaxed"
                 />
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleSaveEdit(q.id)}
-                    className="px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-bold shadow-xs hover:opacity-95"
+                    className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs hover:bg-indigo-700"
                   >
                     Save Changes
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
-                    className="px-3 py-1.5 rounded-xl text-xs text-on-surface-variant hover:bg-white"
+                    className="px-3 py-1.5 rounded-xl text-xs text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   >
                     Cancel
                   </button>
@@ -238,40 +372,45 @@ export default function ArchiveBuilderPage() {
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-code-metric text-[11px] font-bold text-primary">#{idx + 1} ({q.id})</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                      q.category === 'technical' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'
-                    }`}>
+                    <span className="font-code-metric text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                      #{idx + 1} ({q.id})
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                        q.category === 'technical'
+                          ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                          : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                      }`}
+                    >
                       {q.category}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-200/80 text-zinc-600 font-bold">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold">
                       Difficulty: {q.difficulty}/3
                     </span>
                     {q.isPinned && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-bold flex items-center gap-1">
                         <span className="material-symbols-outlined text-[12px]">push_pin</span>
                         <span>Pinned</span>
                       </span>
                     )}
                     {q.isEdited && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-[10px] font-bold">
                         Edited by User
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-base font-bold text-on-surface leading-snug">
-                    {q.prompt}
-                  </h3>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
-                    {q.answer_outline}
-                  </p>
+                  <h3 className="text-base font-bold text-zinc-950 dark:text-white leading-snug">{q.prompt}</h3>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">{q.answer_outline}</p>
 
                   {q.requirement_ids && (
                     <div className="flex items-center gap-1.5 pt-1">
                       <span className="text-[10px] text-zinc-400">Mapped:</span>
                       {q.requirement_ids.map((rid) => (
-                        <span key={rid} className="px-1.5 py-0.2 rounded bg-white/70 text-[10px] font-code-metric text-on-surface-variant font-bold border border-white/80">
+                        <span
+                          key={rid}
+                          className="px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px] font-code-metric text-zinc-600 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-zinc-700"
+                        >
                           {rid}
                         </span>
                       ))}
@@ -329,5 +468,20 @@ export default function ArchiveBuilderPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function ArchiveBuilderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-5xl mx-auto px-4 py-16 text-center">
+          <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-bold text-zinc-500 mt-3">Loading Question Archive...</p>
+        </div>
+      }
+    >
+      <ArchiveContent />
+    </Suspense>
   );
 }

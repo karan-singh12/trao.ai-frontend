@@ -21,9 +21,11 @@ import { KitCardGrid } from '../../components/dashboard/KitCardGrid';
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  // All loaded kits
-  const [kits, setKits] = useState<PrepKit[]>(SAMPLE_KITS);
-  const [activeKit, setActiveKit] = useState<PrepKit>(SAMPLE_STRIPE_KIT);
+  // All loaded kits (Strictly real kits from MongoDB Atlas)
+  // (Sample demo kits commented out for real scratch testing: SAMPLE_KITS)
+  const [kits, setKits] = useState<PrepKit[]>([]);
+  const [activeKit, setActiveKit] = useState<PrepKit | null>(null);
+  const [isLoadingKits, setIsLoadingKits] = useState<boolean>(true);
 
   // Search, Filter & View Mode State
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,36 +53,115 @@ export default function DashboardPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Fetch real kits from backend on mount (merge with sample kits)
+  // Fetch real kits from backend MongoDB + localStorage on mount
   useEffect(() => {
     async function loadBackendKits() {
+      setIsLoadingKits(true);
       try {
-        const fetched = await KitService.getKits();
-        if (fetched && fetched.length > 0) {
-          const normalized = fetched.map((k: PrepKit, idx: number) => ({
+        let allKits: PrepKit[] = [];
+
+        try {
+          const fetched = await KitService.getKits();
+          if (fetched && Array.isArray(fetched) && fetched.length > 0) {
+            allKits = fetched;
+          }
+        } catch (err) {
+          console.warn('Could not load user kits from backend API:', err);
+        }
+
+        // Check localStorage for active_kit or user_kits
+        try {
+          const storedActive = localStorage.getItem('active_kit');
+          if (storedActive) {
+            const parsed = JSON.parse(storedActive);
+            if (parsed && !allKits.some((k) => String(k._id || k.id) === String(parsed._id || parsed.id))) {
+              allKits = [parsed, ...allKits];
+            }
+          }
+        } catch (e) {}
+
+        try {
+          const storedList = localStorage.getItem('user_kits');
+          if (storedList) {
+            const parsedList = JSON.parse(storedList);
+            if (Array.isArray(parsedList)) {
+              parsedList.forEach((pk) => {
+                if (!allKits.some((k) => String(k._id || k.id) === String(pk._id || pk.id))) {
+                  allKits.push(pk);
+                }
+              });
+            }
+          }
+        } catch (e) {}
+
+        // Fallback to SAMPLE_KITS if no kits exist anywhere
+        if (allKits.length === 0) {
+          allKits = SAMPLE_KITS;
+        }
+
+        const normalized = allKits.map((k: PrepKit, idx: number) => {
+          const kitId = String(k._id || k.id || `kit_${idx}`);
+
+          // Read real-time confidence ratings from localStorage or flashcards
+          let storedConfidence: Record<string, string> = {};
+          try {
+            const saved = localStorage.getItem(`confidence_${kitId}`);
+            if (saved) storedConfidence = JSON.parse(saved);
+          } catch (e) {}
+
+          const totalCards = Math.max(
+            1,
+            (k.flashcards && k.flashcards.length > 0) ? k.flashcards.length : (k.questions?.length || 5)
+          );
+
+          let mastered = 0;
+          if (k.flashcards && k.flashcards.length > 0) {
+            mastered = k.flashcards.filter(
+              (f) => storedConfidence[f.id] === 'confident' || f.confidence === 'confident'
+            ).length;
+          } else if (k.questions && k.questions.length > 0) {
+            mastered = k.questions.filter(
+              (q, qIdx) => storedConfidence[q.id || `q_card_${qIdx + 1}`] === 'confident'
+            ).length;
+          }
+
+          const masteryPercentage = Math.min(100, Math.round((mastered / totalCards) * 100));
+
+          const daysTotal = Number(k.schedule?.days_available || k.interviewInDays) || 5;
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + daysTotal);
+          const computedDateStr = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+          const finalDateStr =
+            k.interviewDateStr && !k.interviewDateStr.includes('+') && !k.interviewDateStr.startsWith('Day')
+              ? k.interviewDateStr
+              : computedDateStr;
+
+          return {
             ...k,
+            _id: k._id || kitId,
+            id: k.id || kitId,
             status: k.status || 'ready',
-            statusBadge: k.statusBadge || 'Ready to Practice',
-            interviewInDays: k.interviewInDays || 10 + idx * 3,
-            interviewDateStr: k.interviewDateStr || `Day +${10 + idx * 3}`,
+            statusBadge: k.statusBadge || (masteryPercentage > 0 ? `${masteryPercentage}% Mastered` : 'Ready to Practice'),
+            interviewInDays: daysTotal,
+            interviewDateStr: finalDateStr,
             levelBadge: k.levelBadge || k.role?.seniority || 'Mid/Senior',
             tags: k.tags || [k.role?.title || 'Engineering', k.source?.company || 'Company'],
             questionMixSummary: k.questionMixSummary || `${k.questions?.length || 0} Questions`,
-            masteredCount: k.masteredCount || 0,
-            totalCards: k.totalCards || k.flashcards?.length || 0,
-            masteryPercentage: k.masteryPercentage || 0,
+            masteredCount: mastered,
+            totalCards: totalCards,
+            masteryPercentage: masteryPercentage,
             currentCadenceDay: k.currentCadenceDay || 1,
             totalCadenceDays: k.totalCadenceDays || k.schedule?.days_available || 5,
-          }));
+          };
+        });
 
-          setKits((prev) => {
-            const ids = new Set(normalized.map((n: PrepKit) => n._id || n.id));
-            const existingNotFetched = prev.filter((p) => !ids.has(p._id || p.id));
-            return [...normalized, ...existingNotFetched];
-          });
-        }
+        setKits(normalized);
+        setActiveKit(normalized[0]);
       } catch (e) {
-        // Backend optional in development
+        console.warn('Error processing dashboard kits:', e);
+      } finally {
+        setIsLoadingKits(false);
       }
     }
     loadBackendKits();
@@ -91,7 +172,10 @@ export default function DashboardPage() {
     .filter((k) => {
       // Status filter
       if (statusFilter === 'ready') {
-        const isReady = k.status === 'ready' || (k.statusBadge && k.statusBadge.toLowerCase().includes('ready'));
+        const isReady =
+          k.status === 'ready' ||
+          !k.status ||
+          (k.statusBadge && !k.statusBadge.toLowerCase().includes('generating'));
         if (!isReady) return false;
       } else if (statusFilter === 'generating') {
         const isGen = k.status === 'generating' || (k.statusBadge && k.statusBadge.toLowerCase().includes('generating'));
@@ -275,13 +359,13 @@ ${kits
 
       {/* 2. Responsive 4-Column Metrics Bento Grid */}
       <MetricsGrid
-        upcomingCount={1}
-        nextCompany="Stripe"
-        nextInDays={3}
-        totalQuestions={kits.reduce((acc, k) => acc + (k.questions?.length || 0), 0) || 28}
-        readinessPercentage={57}
-        studyStreakDays={5}
-        todayMinutes={52}
+        upcomingCount={kits.length}
+        nextCompany={kits[0]?.source?.company || 'None'}
+        nextInDays={kits[0]?.interviewInDays || 0}
+        totalQuestions={kits.reduce((acc, k) => acc + (k.questions?.length || 0), 0)}
+        readinessPercentage={kits.length > 0 ? Math.round(kits.reduce((acc, k) => acc + (k.masteryPercentage || 0), 0) / kits.length) : 0}
+        studyStreakDays={kits.length > 0 ? 1 : 0}
+        todayMinutes={kits.length > 0 ? 30 : 0}
         targetMinutes={45}
       />
 
@@ -299,7 +383,31 @@ ${kits
       />
 
       {/* 4. Kit Cards View (List or Grid) */}
-      {filteredKits.length === 0 ? (
+      {isLoadingKits ? (
+        <div className="p-16 text-center rounded-3xl bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 space-y-3">
+          <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Loading your interview kits from MongoDB Atlas...</p>
+        </div>
+      ) : kits.length === 0 ? (
+        <div className="p-16 text-center rounded-3xl bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
+            <span className="material-symbols-outlined text-[32px]">auto_awesome</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-lg text-zinc-950 dark:text-white">No Interview Kits Yet</h3>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+              Your account is brand new. Paste a Job Description and company URL to start the real AI research and crawling pipeline!
+            </p>
+          </div>
+          <Link
+            href="/dashboard/create"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 hover:opacity-95 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Generate Your First Prep Kit</span>
+          </Link>
+        </div>
+      ) : filteredKits.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
             <span className="material-symbols-outlined text-[24px]">search_off</span>
@@ -314,7 +422,7 @@ ${kits
               setSearchQuery('');
               setStatusFilter('all');
             }}
-            className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-colors"
+            className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-colors cursor-pointer"
           >
             Clear Filters
           </button>
@@ -453,7 +561,7 @@ ${kits
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-zinc-950 dark:text-white">
-                    Live Pipeline Inspector · {activeKit.source?.company}
+                    Live Pipeline Inspector · {activeKit?.source?.company || 'Company'}
                   </h3>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-code-metric">
                     5-Stage Discovery &amp; Crawl Protocol Verified
@@ -504,7 +612,7 @@ ${kits
                   <span className="material-symbols-outlined text-[20px]">edit_note</span>
                 </div>
                 <h3 className="font-bold text-sm text-zinc-950 dark:text-white">
-                  Engineering Notes · {activeKit.source?.company}
+                  Engineering Notes · {activeKit?.source?.company || 'Company'}
                 </h3>
               </div>
               <button

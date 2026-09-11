@@ -19,6 +19,11 @@ export const KitCardList: React.FC<KitCardListProps> = ({
   const roleTitle = kit.role?.title || 'Engineer';
   const initial = company.charAt(0).toUpperCase();
 
+  const domain = kit.source?.company_url
+    ? kit.source.company_url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0]
+    : '';
+  const logoSrc = kit.source?.logo_url || (domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null);
+
   // Status badge coloring
   const isGenerating = kit.status === 'generating' || (kit.statusBadge && kit.statusBadge.toLowerCase().includes('generating'));
   const isNeedsReview = kit.status === 'review' || (kit.statusBadge && kit.statusBadge.toLowerCase().includes('review'));
@@ -49,9 +54,25 @@ export const KitCardList: React.FC<KitCardListProps> = ({
       {/* Top Row: Company, Role, Badges, & Deadline */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3.5 min-w-0">
-          {/* Company Avatar Box */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0">
-            {initial}
+          {/* Company Avatar / Logo Box */}
+          <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-center font-black text-sm shadow-xs shrink-0 overflow-hidden p-1 relative">
+            {logoSrc && (
+              <img
+                src={logoSrc}
+                alt={`${company} logo`}
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            )}
+            <div
+              className={`logo-fallback w-full h-full rounded-lg bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white flex items-center justify-center font-black text-sm ${logoSrc ? 'hidden' : 'flex'}`}
+            >
+              {initial}
+            </div>
           </div>
 
           <div className="min-w-0">
@@ -86,12 +107,22 @@ export const KitCardList: React.FC<KitCardListProps> = ({
         </div>
 
         {/* Interview Deadline Warning Pill */}
-        {kit.interviewDateStr && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-bold border border-rose-200/80 dark:border-rose-900/80 shrink-0 self-start sm:self-center">
-            <span className="material-symbols-outlined text-[15px]">event</span>
-            <span>Interview in {kit.interviewInDays || 3} Days ({kit.interviewDateStr})</span>
-          </div>
-        )}
+        {(() => {
+          const daysNum = kit.interviewInDays || 5;
+          let dateText = kit.interviewDateStr;
+          if (!dateText || dateText.includes('+') || dateText.startsWith('Day')) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysNum);
+            dateText = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }
+
+          return (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-bold border border-rose-200/80 dark:border-rose-900/80 shrink-0 self-start sm:self-center">
+              <span className="material-symbols-outlined text-[15px]">event</span>
+              <span>Interview in {daysNum} Days ({dateText})</span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Middle Grid: 3 Metric Pills */}
@@ -172,7 +203,12 @@ export const KitCardList: React.FC<KitCardListProps> = ({
 
         <div className="flex items-center gap-2 flex-wrap">
           <Link
-            href="/dashboard/archive"
+            href={`/dashboard/archive?kitId=${kit._id || kit.id}`}
+            onClick={() => {
+              try {
+                localStorage.setItem('active_kit', JSON.stringify(kit));
+              } catch (e) {}
+            }}
             className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 text-xs font-semibold transition-all shadow-xs flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[15px]">bookmark</span>
@@ -180,7 +216,12 @@ export const KitCardList: React.FC<KitCardListProps> = ({
           </Link>
 
           <Link
-            href="/dashboard/schedule"
+            href={`/dashboard/schedule?kitId=${kit._id || kit.id}`}
+            onClick={() => {
+              try {
+                localStorage.setItem('active_kit', JSON.stringify(kit));
+              } catch (e) {}
+            }}
             className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700 text-xs font-semibold transition-all shadow-xs flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[15px]">calendar_today</span>
@@ -188,7 +229,12 @@ export const KitCardList: React.FC<KitCardListProps> = ({
           </Link>
 
           <Link
-            href="/dashboard/practice"
+            href={`/dashboard/practice?kitId=${kit._id || kit.id}`}
+            onClick={() => {
+              try {
+                localStorage.setItem('active_kit', JSON.stringify(kit));
+              } catch (e) {}
+            }}
             className="px-4 py-1.5 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white text-xs font-bold shadow-sm shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[15px]">play_arrow</span>

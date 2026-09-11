@@ -19,6 +19,11 @@ export const KitCardGrid: React.FC<KitCardGridProps> = ({
   const roleTitle = kit.role?.title || 'Engineer';
   const initial = company.charAt(0).toUpperCase();
 
+  const domain = kit.source?.company_url
+    ? kit.source.company_url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0]
+    : '';
+  const logoSrc = kit.source?.logo_url || (domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null);
+
   const isGenerating = kit.status === 'generating' || (kit.statusBadge && kit.statusBadge.toLowerCase().includes('generating'));
   const isNeedsReview = kit.status === 'review' || (kit.statusBadge && kit.statusBadge.toLowerCase().includes('review'));
 
@@ -39,8 +44,24 @@ export const KitCardGrid: React.FC<KitCardGridProps> = ({
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white flex items-center justify-center font-black text-sm shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-              {initial}
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-center font-black text-sm shadow-xs shrink-0 group-hover:scale-105 transition-transform overflow-hidden p-1 relative">
+              {logoSrc && (
+                <img
+                  src={logoSrc}
+                  alt={`${company} logo`}
+                  className="w-full h-full object-contain rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+              )}
+              <div
+                className={`logo-fallback w-full h-full rounded-lg bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white flex items-center justify-center font-black text-sm ${logoSrc ? 'hidden' : 'flex'}`}
+              >
+                {initial}
+              </div>
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-extrabold text-base text-zinc-950 dark:text-white leading-tight truncate" title={company}>
@@ -103,11 +124,20 @@ export const KitCardGrid: React.FC<KitCardGridProps> = ({
             <span>{kit.questions?.length || 5} Questions</span>
           </span>
 
-          {kit.interviewDateStr && (
-            <span className="font-bold text-rose-600 dark:text-rose-400">
-              In {kit.interviewInDays || 3}d
-            </span>
-          )}
+          {(() => {
+            const daysNum = kit.interviewInDays || 5;
+            let dateText = kit.interviewDateStr;
+            if (!dateText || dateText.includes('+') || dateText.startsWith('Day')) {
+              const d = new Date();
+              d.setDate(d.getDate() + daysNum);
+              dateText = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            return (
+              <span className="font-bold text-rose-600 dark:text-rose-400" title={`Target interview: ${dateText}`}>
+                In {daysNum}d ({dateText})
+              </span>
+            );
+          })()}
         </div>
       </div>
 
@@ -115,14 +145,24 @@ export const KitCardGrid: React.FC<KitCardGridProps> = ({
       <div className="flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-1.5">
           <Link
-            href="/dashboard/schedule"
+            href={`/dashboard/schedule?kitId=${kit._id || kit.id}`}
+            onClick={() => {
+              try {
+                localStorage.setItem('active_kit', JSON.stringify(kit));
+              } catch (e) {}
+            }}
             className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 transition-colors"
             title="View Schedule"
           >
             <span className="material-symbols-outlined text-[17px]">calendar_today</span>
           </Link>
           <Link
-            href="/dashboard/archive"
+            href={`/dashboard/archive?kitId=${kit._id || kit.id}`}
+            onClick={() => {
+              try {
+                localStorage.setItem('active_kit', JSON.stringify(kit));
+              } catch (e) {}
+            }}
             className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 transition-colors"
             title="Question Archive"
           >
@@ -141,7 +181,12 @@ export const KitCardGrid: React.FC<KitCardGridProps> = ({
         </div>
 
         <Link
-          href="/dashboard/practice"
+          href={`/dashboard/practice?kitId=${kit._id || kit.id}`}
+          onClick={() => {
+            try {
+              localStorage.setItem('active_kit', JSON.stringify(kit));
+            } catch (e) {}
+          }}
           className="px-3 py-1.5 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-slate-900 text-white text-xs font-bold shadow-xs hover:shadow-indigo-600/30 transition-all flex items-center gap-1 hover:scale-[1.02]"
         >
           <span className="material-symbols-outlined text-[15px]">play_arrow</span>

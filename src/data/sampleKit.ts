@@ -12,6 +12,10 @@ export interface Question {
   prompt: string;
   answer_outline: string;
   difficulty: 1 | 2 | 3;
+  rubric?: {
+    must_include?: string[];
+    good_to_include?: string[];
+  };
   isEdited?: boolean;
   isPinned?: boolean;
 }
@@ -40,11 +44,13 @@ export interface PrepKit {
     jd_chars: number;
     researched_at: string;
     pages_used: string[];
+    logo_url?: string;
   };
   company_brief: {
     summary: string;
     what_they_do: string;
     sources: string[];
+    logo_url?: string;
   };
   role: {
     title: string;
