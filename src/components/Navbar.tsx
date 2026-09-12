@@ -98,10 +98,10 @@ export const Navbar: React.FC = () => {
                     />
                     <div className="flex flex-col min-w-0">
                       <span className="font-bold text-white text-sm truncate leading-tight">
-                        {user?.name || 'Karan Singh'}
+                        {user?.name || 'User'}
                       </span>
                       <span className="text-[11px] text-zinc-400 truncate">
-                        {user?.email || 'karan@prepkit.ai'}
+                        {user?.email || 'user@example.com'}
                       </span>
                     </div>
                   </div>

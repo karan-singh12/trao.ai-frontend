@@ -62,6 +62,8 @@ export const AuthService = {
 
   setSession(authData: AuthResponseData): void {
     if (typeof window === 'undefined') return;
+    localStorage.removeItem('active_kit');
+    localStorage.removeItem('user_kits');
     localStorage.setItem(TOKEN_KEY, authData.token);
     localStorage.setItem(USER_KEY, JSON.stringify(authData.user));
   },
@@ -70,6 +72,15 @@ export const AuthService = {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('active_kit');
+    localStorage.removeItem('user_kits');
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('confidence_') || key.startsWith('kit_notes_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
   },
 
   getStoredToken(): string | null {

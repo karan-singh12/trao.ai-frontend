@@ -9,16 +9,16 @@ export default function CreateKitPage() {
   const router = useRouter();
 
   // Form State
-  const [selectedPreset, setSelectedPreset] = useState<number | null>(0);
-  const [formCompany, setFormCompany] = useState(SAMPLE_JOB_DESCRIPTIONS[0].company);
-  const [formUrl, setFormUrl] = useState(SAMPLE_JOB_DESCRIPTIONS[0].url);
-  const [formDays, setFormDays] = useState(SAMPLE_JOB_DESCRIPTIONS[0].days);
-  const [formJd, setFormJd] = useState(SAMPLE_JOB_DESCRIPTIONS[0].jd);
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [formCompany, setFormCompany] = useState('');
+  const [formUrl, setFormUrl] = useState('');
+  const [formDays, setFormDays] = useState(5);
+  const [formJd, setFormJd] = useState('');
 
   // Pipeline execution state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [generationLogs, setGenerationLogs] = useState<{ stage: string; message: string; timestamp: string }[]>([]);
+  const [currentPhase, setCurrentPhase] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Batch upload state
@@ -42,15 +42,8 @@ export default function CreateKitPage() {
     }
 
     setIsGenerating(true);
-    setGenerationProgress(10);
-    setGenerationLogs([{ stage: 'INIT', message: 'Starting real-time interview synthesis pipeline...', timestamp: new Date().toLocaleTimeString() }]);
-
-    const addLog = (stage: string, msg: string) => {
-      setGenerationLogs((prev) => [
-        ...prev,
-        { stage, message: msg, timestamp: new Date().toLocaleTimeString() }
-      ]);
-    };
+    setGenerationProgress(15);
+    setCurrentPhase('Analyzing role & requirements...');
 
     try {
       const payload: GenerateKitPayload = {
@@ -60,29 +53,37 @@ export default function CreateKitPage() {
         company_name: formCompany.trim() || undefined
       };
 
-      setGenerationProgress(25);
-
-      const generated = await KitService.generateKitStream(payload, (stage, message) => {
-        addLog(stage, message);
-        if (stage.includes('CRAWL')) setGenerationProgress(50);
-        if (stage.includes('SYNTHESIS')) setGenerationProgress(75);
-        if (stage.includes('COVERAGE')) setGenerationProgress(90);
+      const generated = await KitService.generateKitStream(payload, (stage) => {
+        const s = stage.toUpperCase();
+        if (s.includes('EXTRACT')) {
+          setCurrentPhase('Analyzing key skills & qualifications...');
+          setGenerationProgress(30);
+        } else if (s.includes('CRAWL')) {
+          setCurrentPhase('Gathering company culture & context...');
+          setGenerationProgress(50);
+        } else if (s.includes('SYNTHESIS') || s.includes('QUESTION') || s.includes('BRIEF')) {
+          setCurrentPhase('Generating tailored questions & flashcards...');
+          setGenerationProgress(75);
+        } else if (s.includes('COVERAGE') || s.includes('SCHEDULE')) {
+          setCurrentPhase('Structuring personalized study plan...');
+          setGenerationProgress(90);
+        }
       });
 
       setGenerationProgress(100);
-      addLog('DONE', 'Kit compiled & validated against Appendix A!');
+      setCurrentPhase('Kit ready! Redirecting to dashboard...');
 
-      // Store generated kit ID in localStorage so practice / dashboard picks it up
+      // Store generated kit in localStorage so practice / dashboard picks it up
       try {
-        const stored = localStorage.getItem('active_kit');
         localStorage.setItem('active_kit', JSON.stringify(generated));
       } catch (e) {}
 
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
-      addLog('ERROR', err.message || 'Pipeline network fallback applied.');
+      setCurrentPhase('');
+      setStatusMessage(err.message || 'Generation failed. Please try again.');
       setTimeout(() => {
         router.push('/dashboard');
       }, 1800);
@@ -281,29 +282,39 @@ export default function CreateKitPage() {
             </div>
           </div>
 
-          {/* Right Col: Live Pipeline Status Preview */}
+          {/* Right Col: Preparation Framework Overview */}
           <div className="space-y-4">
             <div className="glass-card p-5 rounded-2xl border border-white/80 flex flex-col h-full">
               <span className="text-xs font-bold text-on-surface uppercase tracking-wider block mb-3">
-                Live 5-Step Pipeline Chain
+                {isGenerating ? 'Generating Your Prep Kit' : '5-Step Preparation Framework'}
               </span>
 
-              {/* Progress Bar */}
-              <div className="w-full h-2 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-full overflow-hidden mb-4">
-                <div
-                  className="h-full bg-gradient-to-r from-primary to-cyan-400 transition-all duration-300"
-                  style={{ width: `${generationProgress}%` }}
-                />
-              </div>
+              {/* Progress Bar (Visible during generation) */}
+              {isGenerating && (
+                <div className="mb-4 space-y-2">
+                  <div className="w-full h-2 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-indigo-600 transition-all duration-300"
+                      style={{ width: `${generationProgress}%` }}
+                    />
+                  </div>
+                  {currentPhase && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-primary animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      <span>{currentPhase}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Chain Steps */}
               <div className="space-y-3 flex-1">
                 {[
-                  { title: '1. Requirement Extraction', desc: 'Classify must vs nice-to-have' },
-                  { title: '2. SSRF Guard & Web Crawl', desc: 'Homepage & /careers ranking' },
-                  { title: '3. Public Discussion Search', desc: 'Interview round intelligence' },
-                  { title: '4. Question & Flashcard Synthesis', desc: 'Categorized technical questions' },
-                  { title: '5. Pass 2 Coverage Loop', desc: '100% must-have validation' }
+                  { title: '1. Role & Skill Analysis', desc: 'Identify core competencies & technical qualifications' },
+                  { title: '2. Company Research', desc: 'Analyze company mission, values & engineering culture' },
+                  { title: '3. Interview Intelligence', desc: 'Synthesize real-world interview formats & question patterns' },
+                  { title: '4. Questions & Flashcards', desc: 'Curate targeted technical & behavioural prep cards' },
+                  { title: '5. Personalized Study Schedule', desc: 'Distribute study sessions evenly across your target days' }
                 ].map((step, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl glass-panel text-xs border border-white/80">
                     <span className="material-symbols-outlined text-emerald-500 text-[18px] shrink-0 mt-0.5">
@@ -316,19 +327,6 @@ export default function CreateKitPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Live Terminal Log Box */}
-              {generationLogs.length > 0 && (
-                <div className="mt-4 p-3 rounded-xl bg-zinc-950 text-white font-code-metric text-[10px] max-h-36 overflow-y-auto space-y-1">
-                  {generationLogs.map((log, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-zinc-500">{log.timestamp}</span>
-                      <span className="text-primary font-bold">[{log.stage}]</span>
-                      <span className="text-zinc-300">{log.message}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </form>

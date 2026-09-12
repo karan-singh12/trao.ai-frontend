@@ -14,13 +14,13 @@ interface MetricsGridProps {
 }
 
 export const MetricsGrid: React.FC<MetricsGridProps> = ({
-  upcomingCount = 1,
-  nextCompany = 'Stripe',
-  nextInDays = 3,
-  totalQuestions = 13,
-  readinessPercentage = 57,
-  studyStreakDays = 5,
-  todayMinutes = 52,
+  upcomingCount = 0,
+  nextCompany = 'None',
+  nextInDays = 0,
+  totalQuestions = 0,
+  readinessPercentage = 0,
+  studyStreakDays = 0,
+  todayMinutes = 0,
   targetMinutes = 45,
 }) => {
   // Compute circular progress stroke
@@ -44,10 +44,16 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
           <span className="text-xs text-blue-900/70 dark:text-blue-300/70 font-semibold">scheduled rounds</span>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-blue-950/80 text-blue-900 dark:text-blue-200 text-[11px] font-bold border border-blue-200/80 dark:border-blue-800 shadow-xs">
-          <span className="material-symbols-outlined text-[13px] text-rose-500">alarm</span>
-          <span>Next: <strong className="text-blue-950 dark:text-white font-extrabold">{nextCompany}</strong> in {nextInDays} days</span>
-        </div>
+        {upcomingCount > 0 && nextCompany !== 'None' ? (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-blue-950/80 text-blue-900 dark:text-blue-200 text-[11px] font-bold border border-blue-200/80 dark:border-blue-800 shadow-xs">
+            <span className="material-symbols-outlined text-[13px] text-rose-500">alarm</span>
+            <span>Next: <strong className="text-blue-950 dark:text-white font-extrabold">{nextCompany}</strong> in {nextInDays} days</span>
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-blue-950/80 text-blue-900 dark:text-blue-200 text-[11px] font-medium border border-blue-200/80 dark:border-blue-800 shadow-xs">
+            <span>No upcoming rounds</span>
+          </div>
+        )}
       </div>
 
       {/* 2. Questions Prepared (Vibrant Bright Emerald/Mint) */}
@@ -63,9 +69,11 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
 
         <div className="flex items-baseline gap-2 mb-3">
           <span className="text-3xl font-black text-emerald-950 dark:text-white tracking-tight">{totalQuestions}</span>
-          <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-black font-code-metric shadow-xs">
-            +28 this wk
-          </span>
+          {totalQuestions > 0 && (
+            <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-black font-code-metric shadow-xs">
+              active
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] text-emerald-900/80 dark:text-emerald-300 font-semibold">

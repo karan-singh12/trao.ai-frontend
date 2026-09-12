@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { SAMPLE_KITS, Flashcard, PrepKit } from '../../../data/sampleKit';
+import { Flashcard, PrepKit } from '../../../data/sampleKit';
 import { KitService } from '../../../services/kit.service';
 
 function PracticeContent() {
@@ -20,7 +20,7 @@ function PracticeContent() {
   const [cardConfidence, setCardConfidence] = useState<Record<string, 'none' | 'somewhat' | 'confident'>>({});
   const [sortMode, setSortMode] = useState<'all' | 'least-confident' | 'unmastered'>('least-confident');
 
-  // Load kits from backend API & localStorage on mount or when kitIdParam changes
+  // Load kits from backend API on mount or when kitIdParam changes
   useEffect(() => {
     async function loadKits() {
       setIsLoading(true);
@@ -30,28 +30,17 @@ function PracticeContent() {
         // 1. Fetch user kits from MongoDB via KitService
         try {
           const backendKits = await KitService.getKits();
-          if (backendKits && Array.isArray(backendKits) && backendKits.length > 0) {
+          if (backendKits && Array.isArray(backendKits)) {
             loadedKits = backendKits;
           }
         } catch (err) {
           console.warn('Could not load kits from backend API:', err);
         }
 
-        // 2. Check localStorage for active_kit (e.g. freshly generated kit)
-        let localKit: PrepKit | null = null;
-        try {
-          const stored = localStorage.getItem('active_kit');
-          if (stored) {
-            localKit = JSON.parse(stored);
-            if (localKit && !loadedKits.some((k) => (k._id || k.id) === (localKit?._id || localKit?.id))) {
-              loadedKits = [localKit, ...loadedKits];
-            }
-          }
-        } catch (e) {}
-
-        // 3. Fallback to SAMPLE_KITS only if no user kits exist
         if (loadedKits.length === 0) {
-          loadedKits = SAMPLE_KITS;
+          setKits([]);
+          setActiveKit(null);
+          return;
         }
 
         setKits(loadedKits);
@@ -83,6 +72,14 @@ function PracticeContent() {
         }
 
         // B) If no param or not found, check localStorage
+        let localKit: PrepKit | null = null;
+        try {
+          const stored = typeof window !== 'undefined' ? localStorage.getItem('active_kit') : null;
+          if (stored) {
+            localKit = JSON.parse(stored);
+          }
+        } catch (e) {}
+
         if (!target && localKit) {
           target = loadedKits.find(
             (k) =>
@@ -280,6 +277,29 @@ function PracticeContent() {
         <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
           Loading preparation kit flashcards...
         </p>
+      </div>
+    );
+  }
+
+  if (!activeKit || kits.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <div className="p-12 rounded-3xl bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 space-y-4 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-xs">
+            <span className="material-symbols-outlined text-[32px]">style</span>
+          </div>
+          <h3 className="font-extrabold text-lg text-zinc-950 dark:text-white">No Flashcards Found</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            You don't have any flashcards yet. Generate an interview preparation kit to begin active recall practice.
+          </p>
+          <Link
+            href="/dashboard/create"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Create Prep Kit</span>
+          </Link>
+        </div>
       </div>
     );
   }

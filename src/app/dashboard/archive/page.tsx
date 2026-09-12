@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { SAMPLE_KITS, Question, PrepKit } from '../../../data/sampleKit';
+import { Question, PrepKit } from '../../../data/sampleKit';
 import { KitService } from '../../../services/kit.service';
 
 function ArchiveContent() {
@@ -34,26 +34,17 @@ function ArchiveContent() {
 
         try {
           const backendKits = await KitService.getKits();
-          if (backendKits && Array.isArray(backendKits) && backendKits.length > 0) {
+          if (backendKits && Array.isArray(backendKits)) {
             loadedKits = backendKits;
           }
         } catch (e) {
           console.warn('Could not load kits from backend:', e);
         }
 
-        let localKit: PrepKit | null = null;
-        try {
-          const stored = localStorage.getItem('active_kit');
-          if (stored) {
-            localKit = JSON.parse(stored);
-            if (localKit && !loadedKits.some((k) => (k._id || k.id) === (localKit?._id || localKit?.id))) {
-              loadedKits = [localKit, ...loadedKits];
-            }
-          }
-        } catch (e) {}
-
         if (loadedKits.length === 0) {
-          loadedKits = SAMPLE_KITS;
+          setKits([]);
+          setActiveKit(null);
+          return;
         }
 
         setKits(loadedKits);
@@ -72,6 +63,14 @@ function ArchiveContent() {
             } catch (e) {}
           }
         }
+
+        let localKit: PrepKit | null = null;
+        try {
+          const stored = typeof window !== 'undefined' ? localStorage.getItem('active_kit') : null;
+          if (stored) {
+            localKit = JSON.parse(stored);
+          }
+        } catch (e) {}
 
         if (!target && localKit) {
           target = loadedKits.find((k) => (k._id || k.id) === (localKit?._id || localKit?.id));
@@ -201,6 +200,29 @@ function ArchiveContent() {
       <div className="max-w-5xl mx-auto px-4 py-16 text-center space-y-4">
         <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="text-xs font-bold text-zinc-500">Loading question archive...</p>
+      </div>
+    );
+  }
+
+  if (!activeKit || kits.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <div className="p-12 rounded-3xl bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 space-y-4 max-w-md mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-xs">
+            <span className="material-symbols-outlined text-[32px]">inventory_2</span>
+          </div>
+          <h3 className="font-extrabold text-lg text-zinc-950 dark:text-white">No Questions in Archive</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            You don't have any archived interview questions yet. Generate a prep kit to inspect and manage your questions.
+          </p>
+          <Link
+            href="/dashboard/create"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Create Prep Kit</span>
+          </Link>
+        </div>
       </div>
     );
   }

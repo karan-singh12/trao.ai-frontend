@@ -3,12 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
-import {
-  SAMPLE_KITS,
-  SAMPLE_STRIPE_KIT,
-  SAMPLE_JOB_DESCRIPTIONS,
-  PrepKit,
-} from '../../data/sampleKit';
+import { PrepKit } from '../../data/sampleKit';
 import { KitService } from '../../services/kit.service';
 
 // Modular Dashboard Components
@@ -21,8 +16,7 @@ import { KitCardGrid } from '../../components/dashboard/KitCardGrid';
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  // All loaded kits (Strictly real kits from MongoDB Atlas)
-  // (Sample demo kits commented out for real scratch testing: SAMPLE_KITS)
+  // All loaded kits (Strictly dynamic kits from Backend API)
   const [kits, setKits] = useState<PrepKit[]>([]);
   const [activeKit, setActiveKit] = useState<PrepKit | null>(null);
   const [isLoadingKits, setIsLoadingKits] = useState<boolean>(true);
@@ -53,7 +47,7 @@ export default function DashboardPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Fetch real kits from backend MongoDB + localStorage on mount
+  // Fetch real kits from backend API on mount
   useEffect(() => {
     async function loadBackendKits() {
       setIsLoadingKits(true);
@@ -62,41 +56,11 @@ export default function DashboardPage() {
 
         try {
           const fetched = await KitService.getKits();
-          if (fetched && Array.isArray(fetched) && fetched.length > 0) {
+          if (fetched && Array.isArray(fetched)) {
             allKits = fetched;
           }
         } catch (err) {
           console.warn('Could not load user kits from backend API:', err);
-        }
-
-        // Check localStorage for active_kit or user_kits
-        try {
-          const storedActive = localStorage.getItem('active_kit');
-          if (storedActive) {
-            const parsed = JSON.parse(storedActive);
-            if (parsed && !allKits.some((k) => String(k._id || k.id) === String(parsed._id || parsed.id))) {
-              allKits = [parsed, ...allKits];
-            }
-          }
-        } catch (e) {}
-
-        try {
-          const storedList = localStorage.getItem('user_kits');
-          if (storedList) {
-            const parsedList = JSON.parse(storedList);
-            if (Array.isArray(parsedList)) {
-              parsedList.forEach((pk) => {
-                if (!allKits.some((k) => String(k._id || k.id) === String(pk._id || pk.id))) {
-                  allKits.push(pk);
-                }
-              });
-            }
-          }
-        } catch (e) {}
-
-        // Fallback to SAMPLE_KITS if no kits exist anywhere
-        if (allKits.length === 0) {
-          allKits = SAMPLE_KITS;
         }
 
         const normalized = allKits.map((k: PrepKit, idx: number) => {
@@ -157,7 +121,7 @@ export default function DashboardPage() {
         });
 
         setKits(normalized);
-        setActiveKit(normalized[0]);
+        setActiveKit(normalized[0] || null);
       } catch (e) {
         console.warn('Error processing dashboard kits:', e);
       } finally {
