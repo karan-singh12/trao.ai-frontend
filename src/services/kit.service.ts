@@ -60,7 +60,7 @@ export const KitService = {
     payload: GenerateKitPayload,
     onProgress: (stage: string, message: string) => void
   ): Promise<PrepKit> {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trao-ai-backend.onrender.com/api';
     const token = typeof window !== 'undefined' ? localStorage.getItem('trao_token') : null;
     const url = `${API_BASE_URL.replace(/\/$/, '')}${API_ROUTES.KIT.GENERATE_STREAM}`;
 

@@ -1,7 +1,7 @@
 import { ApiResponse, ApiError } from '../types/api.types';
 import { CLIENT_MESSAGES } from '../constants/messages';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trao-ai-backend.onrender.com/api';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;

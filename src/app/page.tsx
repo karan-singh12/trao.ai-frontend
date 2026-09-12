@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../services/apiClient';
+import { API_ROUTES } from '../constants/apiRoutes';
 import { SAMPLE_JOB_DESCRIPTIONS, SAMPLE_PREP_KIT } from '../data/sampleKit';
 import {
   Sparkles,
@@ -24,7 +26,9 @@ import {
   ChevronRight,
   ExternalLink,
   Sliders,
-  FileText
+  FileText,
+  Activity,
+  Server
 } from 'lucide-react';
 
 export default function Home() {
@@ -39,6 +43,50 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [generationComplete, setGenerationComplete] = useState(false);
+
+  // Backend Health Check State (Pings Render backend on landing page render)
+  const [healthStatus, setHealthStatus] = useState<'checking' | 'healthy' | 'waking_up'>('checking');
+  const [healthInfo, setHealthInfo] = useState<{ database?: string; latency?: number; service?: string } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkBackendHealth = async () => {
+      try {
+        const startTime = performance.now();
+        console.log('[LandingPage] Hitting backend health check API on mount...');
+        const response = await apiClient<{ status: string; service: string; database: string }>(
+          API_ROUTES.HEALTH
+        );
+        const latency = Math.round(performance.now() - startTime);
+        console.log('[LandingPage] Backend health check response:', response, `Latency: ${latency}ms`);
+
+        if (isMounted) {
+          if (response?.data?.status === 'ok') {
+            setHealthStatus('healthy');
+            setHealthInfo({
+              database: response.data.database,
+              service: response.data.service,
+              latency,
+            });
+          } else {
+            setHealthStatus('waking_up');
+          }
+        }
+      } catch (error) {
+        console.warn('[LandingPage] Health check ping (server warming up or error):', error);
+        if (isMounted) {
+          setHealthStatus('waking_up');
+        }
+      }
+    };
+
+    checkBackendHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const steps = [
     { title: "Requirement Extraction", desc: "Extracting must-haves and nice-to-haves from text" },
@@ -91,10 +139,56 @@ export default function Home() {
         </div>
 
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>AI-Powered Interview Studio</span>
+          {/* Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>AI-Powered Interview Studio</span>
+            </div>
+
+            {/* Live Backend Connection Indicator (Render) */}
+            <div
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border shadow-xs transition-all ${
+                healthStatus === 'healthy'
+                  ? 'bg-emerald-50/90 dark:bg-emerald-950/70 border-emerald-300/80 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300'
+                  : healthStatus === 'checking'
+                  ? 'bg-amber-50/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-800/80 text-amber-800 dark:text-amber-300'
+                  : 'bg-rose-50/90 dark:bg-rose-950/70 border-rose-300/80 dark:border-rose-800/80 text-rose-800 dark:text-rose-300'
+              }`}
+              title={
+                healthInfo
+                  ? `Backend: Render (trao-ai-backend.onrender.com)\nDatabase: ${healthInfo.database}\nLatency: ${healthInfo.latency}ms`
+                  : 'Pinging backend health check...'
+              }
+            >
+              <span className="relative flex h-2 w-2">
+                {healthStatus === 'healthy' && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                )}
+                {healthStatus === 'checking' && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    healthStatus === 'healthy'
+                      ? 'bg-emerald-500'
+                      : healthStatus === 'checking'
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                ></span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Server className="w-3 h-3 opacity-70" />
+                <span>
+                  {healthStatus === 'healthy'
+                    ? `Render Backend Connected (${healthInfo?.latency || 0}ms)`
+                    : healthStatus === 'checking'
+                    ? 'Connecting to Render Backend...'
+                    : 'Backend Waking Up...'}
+                </span>
+              </span>
+            </div>
           </div>
 
           {/* Heading */}
@@ -143,6 +237,24 @@ export default function Home() {
               <div className="w-3 h-3 rounded-full bg-amber-400" />
               <div className="w-3 h-3 rounded-full bg-emerald-400" />
               <span className="ml-2 font-mono text-xs text-zinc-500 font-medium">kit-generator-v1.0</span>
+              <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">|</span>
+              <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    healthStatus === 'healthy'
+                      ? 'bg-emerald-500 animate-pulse'
+                      : healthStatus === 'checking'
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-rose-400'
+                  }`}
+                />
+                API:{' '}
+                {healthStatus === 'healthy'
+                  ? `Render Online (${healthInfo?.latency || 0}ms)`
+                  : healthStatus === 'checking'
+                  ? 'Connecting...'
+                  : 'Waking Up...'}
+              </span>
             </div>
 
             {/* Quick Presets */}
