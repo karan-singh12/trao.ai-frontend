@@ -27,7 +27,7 @@ export const Navbar: React.FC = () => {
           >
             <div className="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-zinc-950 shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-all duration-300 ring-1 ring-white/10 shrink-0 overflow-hidden">
               <img
-                src="/trao-icon.png"
+                src="/prepkit-icon.png"
                 alt="PrepKit AI Logo"
                 className="w-full h-full object-cover"
               />

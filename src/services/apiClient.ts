@@ -1,7 +1,7 @@
 import { ApiResponse, ApiError } from '../types/api.types';
 import { CLIENT_MESSAGES } from '../constants/messages';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://trao-ai-backend.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://prepkit-ai-backend.onrender.com/api';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -28,7 +28,7 @@ export async function apiClient<T = any>(
     }
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('trao_token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('prepkit_token') : null;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

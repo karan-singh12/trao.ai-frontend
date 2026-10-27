@@ -1,4 +1,4 @@
-# Trao.ai — Frontend Service & Study Studio
+# PrepKit.ai — Frontend Service & Study Studio
 
 > **Modern, Interactive Interview Preparation Studio (`FS-AI-INTERVIEW-01`)**  
 > Built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**. Provides an interactive kit builder, day-by-day study schedule tracker, active-recall flashcard runner, and real-time generation feedback.
@@ -40,7 +40,7 @@ As mandated by **Section 1: Authentication & User Isolation**, the frontend deli
 
 ### 2. Session Architecture (`AuthContext.tsx`)
 ```
-[Browser LocalStorage] ◄─── Stores JWT ('trao_auth_token') & User Object
+[Browser LocalStorage] ◄─── Stores JWT ('prepkit_token') & User Object
          ▲
          │ (Hydrates on mount)
          ▼
@@ -64,7 +64,7 @@ All private workspace routes (`/dashboard/*`) are wrapped in `ProtectedRoute`:
 ## Key Features & User Flows (Sections 2–8)
 
 - **Instant Kit Generation Studio (`/dashboard/create`)**:
-  - Live progress stepper tracking the 9 discrete backend pipeline stages (Sanitize $\rightarrow$ Extract $\rightarrow$ Crawl $\rightarrow$ Synthesize $\rightarrow$ Audit $\rightarrow$ Schedule).
+  - Live progress stepper tracking the 8 discrete backend pipeline stages (Validate -> Extract -> Crawl -> Synthesize -> Questions -> Flashcards -> Coverage Audit -> Schedule).
   - Validates Job Description, Company URL, and study availability ($1$ to $60$ days).
 - **Interactive Kit Review & Builder (`/dashboard/practice`)**:
   - **Category-Based Filtering**: Filter questions by `Technical`, `System Design`, `Behavioural`, and `Company Fit`.
@@ -97,28 +97,33 @@ The Builder solves **"The Hardest State Problem"** on the client side:
 ```
 frontend/
 ├── public/
+│   ├── prepkit-icon.png
+│   ├── prepkit-logo.png
+│   └── favicon.ico
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
+│   │   ├── dashboard/
+│   │   │   ├── archive/
+│   │   │   ├── create/
+│   │   │   ├── practice/
+│   │   │   ├── schedule/
+│   │   │   └── page.tsx
 │   │   ├── login/
-│   │   └── dashboard/
-│   │       ├── layout.tsx
-│   │       ├── page.tsx
-│   │       ├── create/
-│   │       ├── practice/
-│   │       ├── schedule/
-│   │       └── archive/
+│   │   ├── signup/
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
 │   ├── components/
-│   │   ├── Navbar.tsx
-│   │   ├── ProtectedRoute.tsx
-│   │   └── dashboard/
-│   │       ├── DashboardHeader.tsx
-│   │       ├── FilterToolbar.tsx
-│   │       ├── KitCardGrid.tsx
-│   │       ├── KitCardList.tsx
-│   │       └── MetricsGrid.tsx
+│   │   ├── common/
+│   │   ├── kit/
+│   │   ├── schedule/
+│   │   └── Navbar.tsx
+│   ├── context/
+│   │   └── AuthContext.tsx
 │   ├── services/
+│   │   ├── apiClient.ts
+│   │   ├── auth.service.ts
+│   │   └── kit.service.ts
 │   └── types/
 ```
 
@@ -128,15 +133,15 @@ frontend/
 
 ### 1. Prerequisites
 - **Node.js**: v18.0.0 or higher
-- **Backend Service**: Running on `http://localhost:5000`
+- **Backend Service**: Running locally on `http://localhost:5000` or hosted instance
 
-### 2. Installation
+### 2. Install Dependencies
 ```bash
 cd frontend
 npm install
 ```
 
-### 3. Environment Configuration
+### 3. Environment Configuration (`.env.local`)
 Create a `.env.local` file:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
@@ -146,4 +151,10 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3000`** in your browser.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### 5. Production Build
+```bash
+npm run build
+npm start
+```

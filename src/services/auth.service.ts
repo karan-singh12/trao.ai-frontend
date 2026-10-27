@@ -2,8 +2,8 @@ import { apiClient } from './apiClient';
 import { API_ROUTES } from '../constants/apiRoutes';
 import { AuthResponseData, LoginPayload, SignupPayload, User } from '../types/auth.types';
 
-const TOKEN_KEY = 'trao_token';
-const USER_KEY = 'trao_user';
+const TOKEN_KEY = 'prepkit_token';
+const USER_KEY = 'prepkit_user';
 
 export const AuthService = {
   async signup(payload: SignupPayload): Promise<AuthResponseData> {

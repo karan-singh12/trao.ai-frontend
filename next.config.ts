@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://trao-ai-backend.onrender.com/api";
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://prepkit-ai-backend.onrender.com/api";
 
 const nextConfig: NextConfig = {
   async rewrites() {

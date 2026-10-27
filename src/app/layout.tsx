@@ -22,11 +22,11 @@ export const metadata: Metadata = {
   description: "Manage role-specific prep kits, track readiness milestones, and launch active study sessions.",
   icons: {
     icon: [
-      { url: "/trao-icon.png", href: "/trao-icon.png" },
+      { url: "/prepkit-icon.png", href: "/prepkit-icon.png" },
       { url: "/favicon.ico", href: "/favicon.ico" }
     ],
-    shortcut: "/trao-icon.png",
-    apple: "/trao-icon.png",
+    shortcut: "/prepkit-icon.png",
+    apple: "/prepkit-icon.png",
   },
 };
 
@@ -42,9 +42,9 @@ export default function RootLayout({
     >
       <head>
         <title>PrepKit.ai — The AI Interview Prep Kit & Studio</title>
-        <link rel="icon" type="image/png" href="/trao-icon.png" />
-        <link rel="shortcut icon" href="/trao-icon.png" />
-        <link rel="apple-touch-icon" href="/trao-icon.png" />
+        <link rel="icon" type="image/png" href="/prepkit-icon.png" />
+        <link rel="shortcut icon" href="/prepkit-icon.png" />
+        <link rel="apple-touch-icon" href="/prepkit-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
